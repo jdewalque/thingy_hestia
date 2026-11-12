@@ -98,7 +98,16 @@ Ce script envoie au serveur une fausse alerte de test, comme le ferait
 nRF Cloud. Remplacez l'adresse et le numéro (un numéro vérifié chez Twilio) :
 
 ```bash
-NRFCLOUD_WEBHOOK_TOKEN=<jeton> NRFCLOUD_WEBHOOK_SECRET=<secret> scripts/essai.sh https://hestia-alertes.<votre-compte>.workers.dev +32470123456
+scripts/essai.sh https://hestia-alertes.<votre-compte>.workers.dev +32470123456
+```
+
+Il demande le jeton puis le secret de l'étape 3 ; ce que vous collez ne
+s'affiche pas. Pour ne pas avoir à les ressaisir, vous pouvez les écrire dans
+un fichier `server/.env`, qui n'est jamais envoyé dans le dépôt :
+
+```
+NRFCLOUD_WEBHOOK_TOKEN=<jeton>
+NRFCLOUD_WEBHOOK_SECRET=<secret>
 ```
 
 Résultat attendu : `{"alertes":1,"sms_envoyes":1,"sms_echoues":0}`, et le SMS
