@@ -19,6 +19,13 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 {
 	enum net_lte_state state;
 
+	if (evt->type == LTE_LC_EVT_LTE_MODE_UPDATE) {
+		LOG_INF("Type de réseau : %s",
+			evt->lte_mode == LTE_LC_LTE_MODE_LTEM ? "LTE-M" :
+			evt->lte_mode == LTE_LC_LTE_MODE_NBIOT ? "NB-IoT" : "aucun");
+		return;
+	}
+
 	if (evt->type != LTE_LC_EVT_NW_REG_STATUS) {
 		return;
 	}
