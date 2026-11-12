@@ -14,7 +14,7 @@ message viennent de l'application mobile, par Bluetooth.
 1. Maintenir le bouton 1,5 seconde (le voyant passe au bleu fixe dès l'appui,
    puis au rouge clignotant quand l'alerte part).
 2. Le bijou cherche sa position par Wi-Fi et antennes mobiles (30 secondes au
-   plus). Il n'attend pas le GPS, pour ne pas retarder l'alerte.
+   plus). Le GPS n'est pas utilisé.
 3. Il envoie l'alerte par deux voies :
    - **nRF Cloud** d'abord (voir « Message envoyé à nRF Cloud ») ;
    - **SMS direct** à chaque contact ensuite, avec la position et sa marge
@@ -22,10 +22,6 @@ message viennent de l'application mobile, par Bluetooth.
 
    L'alerte est réussie dès qu'une des deux voies fonctionne. Le voyant passe
    au vert dès que nRF Cloud a reçu l'alerte, sans attendre les SMS.
-4. Si la position est absente ou vague (plus de 100 m), il essaie ensuite le
-   GPS pendant 2 minutes et, s'il obtient mieux, renvoie la position par les
-   deux voies.
-
 Si le réseau n'achemine pas les SMS (le modem répond `+CMS ERROR: 332` après
 une trentaine de secondes), le bijou n'essaie pas les contacts suivants. C'est
 le cas observé en NB-IoT chez Proximus.
@@ -49,8 +45,7 @@ Un message d'appareil au format JSON, avec l'identifiant `HESTIA_ALERT` :
 }
 ```
 
-- `type` : `real` (bouton), `test` (essai depuis l'application) ou
-  `position_update` (position GPS qui complète une alerte réelle).
+- `type` : `real` (bouton) ou `test` (essai depuis l'application).
 - `position` est absent si le bijou n'a pas pu se localiser ; `accuracy` est la
   marge d'erreur en mètres.
 - `battery` (en %) et `ts` (millisecondes depuis 1970) sont absents s'ils sont

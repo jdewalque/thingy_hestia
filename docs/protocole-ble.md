@@ -8,7 +8,7 @@ bijou. Les deux côtés doivent rester d'accord avec lui :
 
 ## Chemin des messages sur le Thingy:91 X
 
-Le Thingy:91 X contient deux puces. Le nRF9151 (réseau mobile, GPS) exécute le
+Le Thingy:91 X contient deux puces. Le nRF9151 (réseau mobile) exécute le
 firmware Hestia mais ne fait pas de Bluetooth. Le Bluetooth est assuré par le
 nRF5340, qui garde son firmware d'origine (« connectivity bridge ») : celui-ci
 relaie tel quel tout ce qui passe entre le Bluetooth et la liaison série UART0
@@ -104,9 +104,9 @@ générique pour les autres.
 ## Alerte de test
 
 `test_alert` suit le même chemin qu'une vraie alerte (localisation rapide,
-message à nRF Cloud, puis SMS à tous les contacts), avec trois différences : le
-message nRF Cloud porte le type `test`, le SMS commence par
-`[TEST - pas d'urgence]`, et le bijou ne tente pas le GPS ensuite.
+message à nRF Cloud, puis SMS à tous les contacts), avec deux différences : le
+message nRF Cloud porte le type `test` et le SMS commence par
+`[TEST - pas d'urgence]`.
 
 Le bijou attend le réseau mobile jusqu'à 2 minutes avant de répondre
 `no_network` : après un allumage, il lui faut couramment plus d'une minute pour

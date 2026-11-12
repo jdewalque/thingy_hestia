@@ -4,14 +4,7 @@
 
 static const char *kind_name(enum alert_kind kind)
 {
-	switch (kind) {
-	case ALERT_KIND_TEST:
-		return "test";
-	case ALERT_KIND_POSITION_UPDATE:
-		return "position_update";
-	default:
-		return "real";
-	}
+	return kind == ALERT_KIND_TEST ? "test" : "real";
 }
 
 /* Arrondit à 5 décimales (environ 1 m) : inutile d'envoyer 15 chiffres. */

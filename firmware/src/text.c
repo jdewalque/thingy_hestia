@@ -181,10 +181,3 @@ void text_alert_sms(char *dst, size_t dst_len, const struct hestia_config *cfg,
 		snprintf(dst + len, dst_len - len, "\nPosition inconnue pour le moment.");
 	}
 }
-
-void text_followup_sms(char *dst, size_t dst_len, const struct hestia_config *cfg,
-		       const struct text_position *position)
-{
-	snprintf(dst, dst_len, "Position plus précise de %s.", wearer_name(cfg));
-	append_position(dst, dst_len, position);
-}

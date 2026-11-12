@@ -17,8 +17,6 @@ enum alert_kind {
 	ALERT_KIND_REAL,
 	/* Essai lancé depuis l'application. */
 	ALERT_KIND_TEST,
-	/* Position plus précise (GPS) qui complète une alerte réelle déjà envoyée. */
-	ALERT_KIND_POSITION_UPDATE,
 };
 
 /*

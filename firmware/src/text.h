@@ -38,8 +38,4 @@ size_t text_utf8_to_latin9(char *dst, size_t dst_len, const char *src);
 void text_alert_sms(char *dst, size_t dst_len, const struct hestia_config *cfg,
 		    const struct text_position *position, bool test);
 
-/* Rédige le SMS complémentaire envoyé quand le GPS donne une position précise. */
-void text_followup_sms(char *dst, size_t dst_len, const struct hestia_config *cfg,
-		       const struct text_position *position);
-
 #endif /* HESTIA_TEXT_H_ */

@@ -1,7 +1,7 @@
 /*
  * Hestia — firmware du bijou d'urgence (prototype sur Thingy:91 X, nRF9151).
  *
- * Un appui maintenu sur le bouton localise le bijou (Wi-Fi, antennes, puis GPS)
+ * Un appui maintenu sur le bouton localise le bijou (Wi-Fi, puis antennes)
  * et envoie un SMS avec la position aux contacts choisis dans l'application.
  */
 #include <zephyr/kernel.h>

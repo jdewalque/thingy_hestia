@@ -124,11 +124,6 @@ static void test_sms(void)
 		  "Marie a appuyé sur son bouton d'urgence et a besoin d'aide.\n"
 		  "Position inconnue pour le moment.");
 
-	text_followup_sms(sms, sizeof(sms), &cfg, &brussels);
-	check_str("complément", sms,
-		  "Position plus précise de Marie.\n"
-		  "Position (à environ 35 m près) : https://maps.google.com/?q=50.84673,4.35247");
-
 	/* Le message le plus long possible tient dans le tampon avec la position. */
 	memset(cfg.message, 'x', sizeof(cfg.message) - 1);
 	cfg.message[sizeof(cfg.message) - 1] = '\0';
@@ -162,13 +157,6 @@ static void test_cloud_message(void)
 		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\","
 		    "\"data\":{\"type\":\"test\",\"name\":\"Marie\","
 		    "\"message\":\"Marie a besoin d'aide.\"}}");
-
-	check_cloud("complément GPS",
-		    alert_json_build(ALERT_KIND_POSITION_UPDATE, &cfg, &brussels, 5, 0),
-		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\","
-		    "\"data\":{\"type\":\"position_update\",\"name\":\"Marie\","
-		    "\"message\":\"Marie a besoin d'aide.\",\"battery\":5,"
-		    "\"position\":{\"lat\":50.84673,\"lon\":4.35247,\"accuracy\":21}}}");
 }
 
 int main(void)

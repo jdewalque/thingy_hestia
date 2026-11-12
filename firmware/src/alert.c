@@ -26,14 +26,9 @@ LOG_MODULE_REGISTER(alert, LOG_LEVEL_INF);
  * allumage, le bijou met couramment plus d'une minute à trouver le réseau.
  */
 #define NETWORK_WAIT K_SECONDS(120)
-/* Localisation rapide (Wi-Fi puis antennes) : elle ne doit pas retarder le SMS. */
+/* Localisation par Wi-Fi puis antennes : elle ne doit pas retarder l'alerte. */
 #define FAST_METHOD_TIMEOUT_MS (15 * MSEC_PER_SEC)
 #define FAST_TOTAL_TIMEOUT_MS  (30 * MSEC_PER_SEC)
-/* GPS : lent, tenté seulement après l'envoi du premier SMS. */
-#define GNSS_TIMEOUT_MS (120 * MSEC_PER_SEC)
-/* Au-delà de cette marge, la position rapide est jugée trop vague. */
-#define PRECISE_ENOUGH_M 100.0f
-
 struct alert_request {
 	bool test;
 	int reply_id;
@@ -122,18 +117,6 @@ static bool locate_fast(void)
 		net_cloud_invalidate();
 	}
 	return false;
-}
-
-static bool locate_gnss(void)
-{
-	struct location_config config;
-	enum location_method methods[] = {LOCATION_METHOD_GNSS};
-
-	location_config_defaults_set(&config, ARRAY_SIZE(methods), methods);
-	config.methods[0].gnss.timeout = GNSS_TIMEOUT_MS;
-	config.timeout = GNSS_TIMEOUT_MS + 10 * MSEC_PER_SEC;
-
-	return locate(&config, GNSS_TIMEOUT_MS + 15 * MSEC_PER_SEC);
 }
 
 /* Code « délai réseau dépassé » du modem (+CMS ERROR: 332). */
@@ -257,21 +240,6 @@ static const char *run_alert(struct alert_request *request)
 		return "send_failed";
 	}
 
-	/* Un essai s'arrête là : inutile de solliciter le GPS, qui ne capte
-	 * presque jamais en intérieur.
-	 */
-	if (request->test) {
-		return NULL;
-	}
-
-	if (position == NULL || position->accuracy > PRECISE_ENOUGH_M) {
-		LOG_INF("Position vague ou absente : essai par GPS");
-		if (locate_gnss()) {
-			(void)send_to_cloud(ALERT_KIND_POSITION_UPDATE, &last_position);
-			text_followup_sms(sms_utf8, sizeof(sms_utf8), &cfg, &last_position);
-			(void)send_sms_to_all();
-		}
-	}
 	return NULL;
 }
 
