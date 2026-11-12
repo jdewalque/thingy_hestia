@@ -220,10 +220,25 @@ int alert_trigger(bool test, int reply_id)
 	return k_msgq_put(&requests, &request, K_NO_WAIT);
 }
 
+/* Le bijou ne traite pas les SMS reçus, mais le modem refuse d'en envoyer
+ * (+CMS ERROR: 301) tant qu'aucun client SMS n'est inscrit.
+ */
+static void sms_handler(struct sms_data *const data, void *context)
+{
+	ARG_UNUSED(data);
+	ARG_UNUSED(context);
+}
+
 int alert_init(void)
 {
-	int err = location_init(location_handler);
+	int err = sms_register_listener(sms_handler, NULL);
 
+	if (err < 0) {
+		LOG_ERR("sms_register_listener: %d", err);
+		return err;
+	}
+
+	err = location_init(location_handler);
 	if (err) {
 		LOG_ERR("location_init: %d", err);
 	}
