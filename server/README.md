@@ -145,6 +145,31 @@ Flasher le firmware à jour (il ajoute les numéros des contacts à l'alerte),
 puis lancer une alerte de test depuis l'application ou le port série. Le SMS
 doit arriver quelques secondes après « Alerte reçue par nRF Cloud ».
 
+## Essayer par WhatsApp (bac à sable Twilio)
+
+Sans numéro Twilio, on peut essayer avec le bac à sable WhatsApp de Twilio,
+qui prête un numéro expéditeur.
+
+1. Dans la console Twilio : « Messaging » → « Try it out » → « Send a WhatsApp
+   message ». La page affiche le numéro du bac à sable et un code d'adhésion
+   (`join` suivi de deux mots).
+2. Depuis le WhatsApp de chaque téléphone qui doit recevoir les alertes,
+   envoyer ce code au numéro du bac à sable.
+3. Enregistrer ce numéro comme expéditeur, précédé de `whatsapp:` (par exemple
+   `whatsapp:+14155238886`) :
+
+   ```bash
+   npx wrangler secret put TWILIO_FROM
+   ```
+
+4. Relancer `scripts/essai.sh` avec un numéro qui a envoyé le code.
+
+Limites du bac à sable : seuls les téléphones qui ont envoyé le code reçoivent
+les messages, et il faut le renvoyer régulièrement (l'adhésion expire au bout
+de quelques jours, et WhatsApp n'autorise un texte libre que dans les 24 heures
+qui suivent le dernier message du destinataire). C'est un moyen d'essai, pas
+une solution définitive.
+
 ## Essayer sans fournisseur de SMS : notifications ntfy
 
 Tant que Twilio n'est pas prêt (vérification du compte, achat d'un numéro), le

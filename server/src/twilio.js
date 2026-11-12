@@ -1,12 +1,15 @@
-// Envoi d'un SMS par l'API de Twilio.
+// Envoi d'un SMS, ou d'un message WhatsApp, par l'API de Twilio.
 
 /**
  * @returns {Promise<{ok: boolean, detail: string}>}
  */
 export async function sendSms(env, to, body, fetchImpl = fetch) {
-  const params = new URLSearchParams({ To: to, Body: body });
-  // TWILIO_FROM est soit un numéro ou un nom d'expéditeur, soit l'identifiant
-  // d'un « Messaging Service » (il commence alors par MG).
+  // TWILIO_FROM est un numéro ou un nom d'expéditeur, l'identifiant d'un
+  // « Messaging Service » (il commence par MG), ou un expéditeur WhatsApp
+  // (« whatsapp:+14155238886 »). Dans ce dernier cas, le message part par
+  // WhatsApp : le destinataire doit porter le même préfixe.
+  const whatsapp = env.TWILIO_FROM.startsWith('whatsapp:');
+  const params = new URLSearchParams({ To: whatsapp ? `whatsapp:${to}` : to, Body: body });
   if (env.TWILIO_FROM.startsWith('MG')) {
     params.set('MessagingServiceSid', env.TWILIO_FROM);
   } else {

@@ -153,6 +153,14 @@ test('utilise un Messaging Service si TWILIO_FROM en désigne un', async () => {
   assert.equal(twilio.sms[0].From, undefined);
 });
 
+test('envoie par WhatsApp si TWILIO_FROM est un expéditeur WhatsApp', async () => {
+  const twilio = fakeTwilio();
+  const whatsapp = { ...env, TWILIO_FROM: 'whatsapp:+14155238886' };
+  await handleRequest(post(delivery()), whatsapp, twilio.fetchImpl);
+  assert.equal(twilio.sms[0].From, 'whatsapp:+14155238886');
+  assert.deepEqual(twilio.sms.map((s) => s.To), ['whatsapp:+32470123456', 'whatsapp:+33612345678']);
+});
+
 test('rejette le JSON invalide et répond aux autres méthodes', async () => {
   assert.equal((await handleRequest(post('pas du json'), env)).status, 400);
   const get = await handleRequest(new Request('https://hestia.example/'), env);
