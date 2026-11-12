@@ -110,8 +110,9 @@ NRFCLOUD_WEBHOOK_TOKEN=<jeton>
 NRFCLOUD_WEBHOOK_SECRET=<secret>
 ```
 
-Résultat attendu : `{"alertes":1,"sms_envoyes":1,"sms_echoues":0}`, et le SMS
-arrive. En cas d'échec, les journaux (voir plus bas) donnent la raison fournie
+Résultat attendu :
+`{"alertes":1,"sms_envoyes":1,"notifications_envoyees":0,"envois_echoues":0}`,
+et le SMS arrive. En cas d'échec, les journaux (voir plus bas) donnent la raison fournie
 par Twilio.
 
 ### 6. Demander à nRF Cloud de pousser les messages
@@ -144,6 +145,37 @@ Flasher le firmware à jour (il ajoute les numéros des contacts à l'alerte),
 puis lancer une alerte de test depuis l'application ou le port série. Le SMS
 doit arriver quelques secondes après « Alerte reçue par nRF Cloud ».
 
+## Essayer sans fournisseur de SMS : notifications ntfy
+
+Tant que Twilio n'est pas prêt (vérification du compte, achat d'un numéro), le
+serveur peut envoyer l'alerte en notification sur un téléphone, par le service
+gratuit [ntfy](https://ntfy.sh), sans compte ni vérification. Les deux voies
+peuvent fonctionner en même temps.
+
+1. Installer l'application **ntfy** sur le téléphone (App Store ou Google Play).
+2. Choisir un nom de « sujet » difficile à deviner, par exemple
+   `hestia-` suivi du résultat de :
+
+   ```bash
+   openssl rand -hex 8
+   ```
+
+   Toute personne qui connaît ce nom peut lire les alertes : il joue le rôle
+   de mot de passe.
+3. Dans l'application : « + » → saisir ce nom de sujet → s'abonner.
+4. L'enregistrer sur le serveur :
+
+   ```bash
+   npx wrangler secret put NTFY_TOPIC
+   ```
+
+5. Relancer `scripts/essai.sh` : la notification arrive sur le téléphone, et
+   la toucher ouvre la carte.
+
+Ce n'est pas un remplacement des SMS : seuls les téléphones abonnés au sujet
+sont prévenus, pas les contacts choisis dans l'application. Pour arrêter,
+supprimer le réglage avec `npx wrangler secret delete NTFY_TOPIC`.
+
 ## Journaux
 
 En direct, pendant un essai :
@@ -165,8 +197,9 @@ npm test
 
 - **Authentification** : le serveur refuse toute requête sans le bon jeton
   (`x-api-key`) et, si un secret est configuré, sans la bonne signature
-  (`x-nrfcloud-signature`). Sans réglages complets, il refuse tout.
-- **Nouvelle livraison** : si aucun SMS ne part, le serveur répond en erreur et
+  (`x-nrfcloud-signature`). Il refuse tout s'il lui manque le jeton, ou s'il
+  n'a ni les trois réglages Twilio ni un sujet ntfy.
+- **Nouvelle livraison** : si rien ne part (ni SMS ni notification), le serveur répond en erreur et
   nRF Cloud relivre l'alerte plus tard. Après un envoi partiel, il ne demande
   pas de nouvelle livraison, pour ne pas envoyer l'alerte en double à ceux qui
   l'ont reçue.

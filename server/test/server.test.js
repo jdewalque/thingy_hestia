@@ -68,7 +68,7 @@ test('envoie un SMS à chaque contact', async () => {
   const response = await handleRequest(post(delivery()), env, twilio.fetchImpl);
 
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { alertes: 1, sms_envoyes: 2, sms_echoues: 0 });
+  assert.deepEqual(await response.json(), { alertes: 1, sms_envoyes: 2, notifications_envoyees: 0, envois_echoues: 0 });
   assert.equal(response.headers.get('x-nrfcloud-team-id'), 'equipe');
 
   assert.deepEqual(twilio.sms.map((s) => s.To), ['+32470123456', '+33612345678']);
@@ -143,7 +143,7 @@ test('demande une nouvelle livraison seulement si aucun SMS n\'est parti', async
   const partial = fakeTwilio((to) => to === '+32470123456');
   const response = await handleRequest(post(delivery()), env, partial.fetchImpl);
   assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { alertes: 1, sms_envoyes: 1, sms_echoues: 1 });
+  assert.deepEqual(await response.json(), { alertes: 1, sms_envoyes: 1, notifications_envoyees: 0, envois_echoues: 1 });
 });
 
 test('utilise un Messaging Service si TWILIO_FROM en désigne un', async () => {
@@ -157,6 +157,45 @@ test('rejette le JSON invalide et répond aux autres méthodes', async () => {
   assert.equal((await handleRequest(post('pas du json'), env)).status, 400);
   const get = await handleRequest(new Request('https://hestia.example/'), env);
   assert.equal(get.status, 200);
+});
+
+test('envoie une notification ntfy quand un sujet est configuré', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url, ...init });
+    // Twilio refuse, ntfy accepte : l'alerte est tout de même partie.
+    return url.startsWith('https://ntfy.sh/')
+      ? new Response('{}', { status: 200 })
+      : new Response(JSON.stringify({ code: 21612, message: 'refus' }), { status: 400 });
+  };
+  const response = await handleRequest(
+    post(delivery({ ...alertData, type: 'test' })), { ...env, NTFY_TOPIC: 'hestia-essai' }, fetchImpl,
+  );
+
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    alertes: 1, sms_envoyes: 0, notifications_envoyees: 1, envois_echoues: 2,
+  });
+  const push = calls.find((c) => c.url === 'https://ntfy.sh/hestia-essai');
+  assert.equal(push.headers.title, 'Hestia - alerte de test');
+  assert.equal(push.headers.click, 'https://maps.google.com/?q=50.84673,4.35247');
+  assert.match(push.body, /^\[TEST - pas d'urgence\] Marie Dupont a besoin d'aide\./);
+});
+
+test('fonctionne avec ntfy seul, sans Twilio', async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    return new Response('{}', { status: 200 });
+  };
+  const ntfyOnly = {
+    NRFCLOUD_WEBHOOK_TOKEN: env.NRFCLOUD_WEBHOOK_TOKEN,
+    NRFCLOUD_WEBHOOK_SECRET: env.NRFCLOUD_WEBHOOK_SECRET,
+    NTFY_TOPIC: 'hestia-essai',
+  };
+  const response = await handleRequest(post(delivery()), ntfyOnly, fetchImpl);
+  assert.equal(response.status, 200);
+  assert.deepEqual(calls, ['https://ntfy.sh/hestia-essai']);
 });
 
 test('nettoie les contacts', () => {

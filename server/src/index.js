@@ -1,12 +1,15 @@
 // Serveur d'alertes Hestia (Cloudflare Worker).
 //
 // nRF Cloud lui pousse les messages du bijou (« Message Routing Service »).
-// Pour chaque alerte HESTIA_ALERT, il envoie un SMS à chaque contact.
+// Pour chaque alerte HESTIA_ALERT, il envoie un SMS à chaque contact (Twilio)
+// et, si un sujet ntfy est configuré, une notification sur les téléphones
+// abonnés à ce sujet.
 
 import { composeSms, extractAlerts } from './alert.js';
+import { sendNotification } from './ntfy.js';
 import { sendSms } from './twilio.js';
 
-const REQUIRED = ['NRFCLOUD_WEBHOOK_TOKEN', 'TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM'];
+const TWILIO = ['TWILIO_ACCOUNT_SID', 'TWILIO_AUTH_TOKEN', 'TWILIO_FROM'];
 const TEAM_HEADER = 'x-nrfcloud-team-id';
 const encoder = new TextEncoder();
 
@@ -63,9 +66,11 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
     return reply(200, { ok: true });
   }
 
-  const missing = REQUIRED.filter((name) => !env[name]);
-  if (missing.length > 0) {
-    console.error(`Configuration incomplète : ${missing.join(', ')}`);
+  // Il faut le jeton de nRF Cloud et au moins une voie d'envoi complète.
+  const useSms = TWILIO.every((name) => env[name]);
+  const useNotification = Boolean(env.NTFY_TOPIC);
+  if (!env.NRFCLOUD_WEBHOOK_TOKEN || (!useSms && !useNotification)) {
+    console.error('Configuration incomplète : jeton nRF Cloud, ou Twilio et ntfy absents');
     return reply(500, { erreur: 'configuration incomplète' });
   }
 
@@ -84,6 +89,7 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
 
   const alerts = extractAlerts(body);
   let sent = 0;
+  let notified = 0;
   let failed = 0;
 
   for (const alert of alerts) {
@@ -92,21 +98,34 @@ export async function handleRequest(request, env, fetchImpl = fetch) {
       `Alerte ${alert.test ? 'de test' : 'RÉELLE'} du bijou ${alert.deviceId} : ` +
         `${alert.contacts.length} contact(s)`,
     );
-    const results = await Promise.all(
-      alert.contacts.map((phone) => sendSms(env, phone, sms, fetchImpl)),
-    );
+    const [results, notification] = await Promise.all([
+      Promise.all(
+        (useSms ? alert.contacts : []).map((phone) => sendSms(env, phone, sms, fetchImpl)),
+      ),
+      useNotification ? sendNotification(env, alert, sms, fetchImpl) : null,
+    ]);
     results.forEach((result, i) => {
       console.log(`SMS à ${mask(alert.contacts[i])} : ${result.detail}`);
       if (result.ok) sent++;
       else failed++;
     });
+    if (notification) {
+      console.log(`Notification ntfy : ${notification.detail}`);
+      if (notification.ok) notified++;
+      else failed++;
+    }
   }
 
   // Une réponse en erreur demande à nRF Cloud de relivrer plus tard. On ne le
-  // fait que si aucun SMS n'est parti : relivrer après un envoi partiel ferait
+  // fait que si rien n'est parti : relivrer après un envoi partiel ferait
   // recevoir l'alerte en double à ceux qui l'ont déjà eue.
-  const status = failed > 0 && sent === 0 ? 502 : 200;
-  return reply(status, { alertes: alerts.length, sms_envoyes: sent, sms_echoues: failed });
+  const status = failed > 0 && sent + notified === 0 ? 502 : 200;
+  return reply(status, {
+    alertes: alerts.length,
+    sms_envoyes: sent,
+    notifications_envoyees: notified,
+    envois_echoues: failed,
+  });
 }
 
 export default {
