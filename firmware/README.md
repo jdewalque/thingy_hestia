@@ -40,6 +40,7 @@ Un message d'appareil au format JSON, avec l'identifiant `HESTIA_ALERT` :
     "name": "Marie Dupont",
     "message": "Marie Dupont a appuyé sur son bouton d'urgence et a besoin d'aide.",
     "battery": 82,
+    "contacts": ["+32470123456"],
     "position": {"lat": 50.84673, "lon": 4.35247, "accuracy": 21}
   }
 }
@@ -50,18 +51,11 @@ Un message d'appareil au format JSON, avec l'identifiant `HESTIA_ALERT` :
   marge d'erreur en mètres.
 - `battery` (en %) et `ts` (millisecondes depuis 1970) sont absents s'ils sont
   inconnus.
+- `contacts` : les numéros des contacts d'urgence, sans leurs noms. Le
+  serveur d'alertes (`server/`) s'en sert pour envoyer les SMS.
 
-Les contacts ne sont pas envoyés à nRF Cloud pour l'instant.
-
-Pour relire les messages reçus, l'API de nRF Cloud est la voie la plus sûre
-(c'est aussi celle qu'utilisera le futur serveur d'envoi de SMS) :
-
-```bash
-curl -H "Authorization: Bearer $NRF_CLOUD_API_KEY" "https://api.nrfcloud.com/v1/messages?deviceId=$DEVICE_ID&appId=HESTIA_ALERT"
-```
-
-La clé d'API se trouve dans le compte nRF Cloud (« User Account »), et
-l'identifiant de l'appareil sur sa page.
+nRF Cloud pousse ce message au serveur d'alertes, qui envoie les SMS : voir
+`server/README.md`.
 
 ### Voyant
 
@@ -172,8 +166,7 @@ firmware/tests/run.sh ~/ncs/v3.4.2
   charge ou quand le modem émet.
 - **Consommation non optimisée** : la liaison série avec le nRF5340 reste
   active en permanence.
-- **Personne n'est encore prévenu par nRF Cloud seul** : l'alerte y arrive,
-  mais il manque le serveur qui la transformera en SMS.
+- **Les numéros des contacts transitent par nRF Cloud**, dans chaque alerte.
 - **SMS directs** : ils demandent une carte SIM et un réseau qui acheminent les
   SMS. Avec la SIM Proximus essayée, le bijou n'est accepté qu'en NB-IoT, où
   les SMS ne passent pas.

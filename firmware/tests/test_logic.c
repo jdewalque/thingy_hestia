@@ -142,21 +142,48 @@ static void check_cloud(const char *what, cJSON *msg, const char *expected)
 
 static void test_cloud_message(void)
 {
-	struct hestia_config cfg = {.name = "Marie", .message = "Marie a besoin d'aide."};
+	struct hestia_config cfg = {
+		.name = "Marie",
+		.message = "Marie a besoin d'aide.",
+		.contact_count = 2,
+		.contacts = {{.name = "Paul", .phone = "+32470123456"},
+			     {.name = "Zoé", .phone = "+33612345678"}},
+	};
 	struct text_position brussels = {50.846734, 4.352468, 20.6f};
+	struct hestia_config longest;
+	cJSON *msg;
+	char *text;
 
 	check_cloud("alerte réelle",
 		    alert_json_build(ALERT_KIND_REAL, &cfg, &brussels, 82, 1700000000000),
 		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\",\"ts\":1700000000000,"
 		    "\"data\":{\"type\":\"real\",\"name\":\"Marie\","
 		    "\"message\":\"Marie a besoin d'aide.\",\"battery\":82,"
+		    "\"contacts\":[\"+32470123456\",\"+33612345678\"],"
 		    "\"position\":{\"lat\":50.84673,\"lon\":4.35247,\"accuracy\":21}}}");
 
 	/* Sans position, sans batterie et sans heure : les champs sont absents. */
 	check_cloud("test sans position", alert_json_build(ALERT_KIND_TEST, &cfg, NULL, -1, 0),
 		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\","
 		    "\"data\":{\"type\":\"test\",\"name\":\"Marie\","
-		    "\"message\":\"Marie a besoin d'aide.\"}}");
+		    "\"message\":\"Marie a besoin d'aide.\","
+		    "\"contacts\":[\"+32470123456\",\"+33612345678\"]}}");
+
+	/* Le message le plus gros possible doit tenir dans un seul paquet CoAP
+	 * (CONFIG_COAP_CLIENT_BLOCK_SIZE=1024).
+	 */
+	memset(&longest, 0, sizeof(longest));
+	memset(longest.name, 'n', sizeof(longest.name) - 1);
+	memset(longest.message, 'm', sizeof(longest.message) - 1);
+	longest.contact_count = CFG_MAX_CONTACTS;
+	for (int i = 0; i < CFG_MAX_CONTACTS; i++) {
+		strcpy(longest.contacts[i].phone, "+123456789012345");
+	}
+	msg = alert_json_build(ALERT_KIND_REAL, &longest, &brussels, 100, 1700000000000);
+	text = cJSON_PrintUnformatted(msg);
+	assert(strlen(text) < 1024);
+	cJSON_free(text);
+	cJSON_Delete(msg);
 }
 
 int main(void)

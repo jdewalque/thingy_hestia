@@ -24,6 +24,7 @@ enum alert_kind {
  *
  *   {"appId":"HESTIA_ALERT","messageType":"DATA","ts":1700000000000,
  *    "data":{"type":"real","name":"…","message":"…","battery":82,
+ *            "contacts":["+32470123456"],
  *            "position":{"lat":50.84673,"lon":4.35247,"accuracy":21}}}
  *
  * @p position vaut NULL si le bijou n'a pas pu se localiser, @p battery est

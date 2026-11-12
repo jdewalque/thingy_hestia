@@ -1,0 +1,7 @@
+name = "hestia-alertes"
+main = "src/index.js"
+compatibility_date = "2025-09-01"
+
+# Conserve les journaux dans le tableau de bord Cloudflare.
+[observability]
+enabled = true

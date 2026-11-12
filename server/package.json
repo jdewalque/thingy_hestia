@@ -1,0 +1,14 @@
+{
+  "name": "hestia-alertes",
+  "private": true,
+  "type": "module",
+  "description": "Reçoit les alertes du bijou Hestia depuis nRF Cloud et les envoie par SMS.",
+  "scripts": {
+    "test": "node --test",
+    "deploy": "wrangler deploy",
+    "logs": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

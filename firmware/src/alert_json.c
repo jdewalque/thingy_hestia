@@ -17,6 +17,7 @@ cJSON *alert_json_build(enum alert_kind kind, const struct hestia_config *cfg,
 			const struct text_position *position, int battery, int64_t ts_ms)
 {
 	cJSON *msg = cJSON_CreateObject();
+	cJSON *contacts;
 	cJSON *data;
 
 	if (msg == NULL || cJSON_AddStringToObject(msg, "appId", ALERT_APP_ID) == NULL ||
@@ -31,6 +32,22 @@ cJSON *alert_json_build(enum alert_kind kind, const struct hestia_config *cfg,
 	    cJSON_AddStringToObject(data, "message", cfg->message) == NULL ||
 	    (battery >= 0 && cJSON_AddNumberToObject(data, "battery", battery) == NULL)) {
 		goto fail;
+	}
+
+	/* Seuls les numéros partent : le serveur d'envoi de SMS n'a pas besoin
+	 * des noms, et le message doit tenir dans un seul paquet.
+	 */
+	contacts = cJSON_AddArrayToObject(data, "contacts");
+	if (contacts == NULL) {
+		goto fail;
+	}
+	for (int i = 0; i < cfg->contact_count; i++) {
+		cJSON *phone = cJSON_CreateString(cfg->contacts[i].phone);
+
+		if (phone == NULL) {
+			goto fail;
+		}
+		cJSON_AddItemToArray(contacts, phone);
 	}
 
 	if (position != NULL) {
