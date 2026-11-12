@@ -72,15 +72,6 @@ int net_init(void)
 		return err;
 	}
 
-	/* NB-IoT ne transmet pas les SMS chez tous les opérateurs (Proximus :
-	 * +CMS ERROR: 332). LTE-M seul, GPS gardé pour la localisation.
-	 */
-	err = lte_lc_system_mode_set(LTE_LC_SYSTEM_MODE_LTEM_GPS,
-				     LTE_LC_SYSTEM_MODE_PREFER_AUTO);
-	if (err) {
-		LOG_ERR("lte_lc_system_mode_set: %d", err);
-	}
-
 	atomic_set(&lte_state, NET_LTE_SEARCHING);
 	err = lte_lc_connect_async(lte_handler);
 	if (err) {
