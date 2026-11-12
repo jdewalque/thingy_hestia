@@ -14,10 +14,9 @@ URL="${1:?Indiquez l'adresse du serveur}"
 PHONE="${2:?Indiquez le numéro qui doit recevoir le SMS, au format +32...}"
 : "${NRFCLOUD_WEBHOOK_TOKEN:?Définissez NRFCLOUD_WEBHOOK_TOKEN}"
 
-BODY=$(cat <<JSON
-{"type":"device.messages","messages":[{"teamId":"essai","deviceId":"essai","messageId":"essai-$(date +%s)","message":{"appId":"HESTIA_ALERT","messageType":"DATA","data":{"type":"test","name":"Essai","message":"Essai du serveur Hestia.","contacts":["$PHONE"],"position":{"lat":50.84673,"lon":4.35247,"accuracy":20}}}}]}
-JSON
-)
+# Le corps est construit avec printf : le shell d'origine de macOS (bash 3.2)
+# ne sait pas lire un bloc de texte placé dans une substitution de commande.
+BODY=$(printf '{"type":"device.messages","messages":[{"teamId":"essai","deviceId":"essai","messageId":"essai-%s","message":{"appId":"HESTIA_ALERT","messageType":"DATA","data":{"type":"test","name":"Essai","message":"Essai du serveur Hestia.","contacts":["%s"],"position":{"lat":50.84673,"lon":4.35247,"accuracy":20}}}}]}' "$(date +%s)" "$PHONE")
 
 set -- -H "content-type: application/json" -H "x-api-key: $NRFCLOUD_WEBHOOK_TOKEN"
 if [ -n "${NRFCLOUD_WEBHOOK_SECRET:-}" ]; then
