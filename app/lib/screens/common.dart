@@ -17,7 +17,7 @@ String describeError(Object error) {
       "Le bijou n'a pas répondu. Approchez-le du téléphone, puis réessayez.",
     JewelError.noNetwork => "Le bijou ne capte pas le réseau mobile. Déplacez-vous près d'une fenêtre ou à l'extérieur, puis réessayez.",
     JewelError.noContact => "Le bijou n'a encore aucun contact d'urgence. Ajoutez-en un, puis réessayez.",
-    JewelError.smsFailed => "Le bijou n'a pas réussi à envoyer le message. Vérifiez que sa carte SIM permet d'envoyer des SMS, puis réessayez.",
+    JewelError.sendFailed => "Le bijou n'a pas réussi à envoyer l'alerte. Déplacez-vous près d'une fenêtre ou à l'extérieur, puis réessayez.",
     JewelError.busy =>
       "Le bijou envoie déjà une alerte. Attendez une minute, puis réessayez.",
     JewelError.rejected =>

@@ -61,7 +61,7 @@ En cas d'échec : `{"id":1,"ok":false,"error":"<code>"}`.
 | `get_status` | – | `status` : `battery` (0–100, absent si inconnu), `lte` (`connected`, `searching` ou `off`) | 10 s |
 | `get_config` | – | `config` (voir ci-dessous) | 10 s |
 | `set_config` | `config` | – | 10 s |
-| `test_alert` | – | `ok` une fois les SMS de test envoyés | 120 s |
+| `test_alert` | – | `ok` dès que l'alerte de test est partie par au moins une voie (nRF Cloud ou SMS) | 180 s |
 
 Une seule requête est traitée à la fois : l'application attend la réponse
 avant d'envoyer la suivante.
@@ -72,7 +72,7 @@ avant d'envoyer la suivante.
 |---|---|
 | `no_network` | Pas de réseau mobile. |
 | `no_contact` | Aucun contact enregistré dans le bijou. |
-| `sms_failed` | Au moins un SMS n'a pas pu partir. |
+| `send_failed` | L'alerte n'est partie ni vers nRF Cloud ni par SMS. |
 | `busy` | Une alerte est déjà en cours. |
 | `bad_config` | Réglages mal formés ou numéro de téléphone invalide. |
 | `storage` | Enregistrement en mémoire impossible. |
@@ -103,6 +103,11 @@ générique pour les autres.
 
 ## Alerte de test
 
-`test_alert` suit le même chemin qu'une vraie alerte (localisation rapide puis
-SMS à tous les contacts), avec deux différences : le SMS commence par
+`test_alert` suit le même chemin qu'une vraie alerte (localisation rapide,
+message à nRF Cloud, puis SMS à tous les contacts), avec trois différences : le
+message nRF Cloud porte le type `test`, le SMS commence par
 `[TEST - pas d'urgence]`, et le bijou ne tente pas le GPS ensuite.
+
+Le bijou attend le réseau mobile jusqu'à 2 minutes avant de répondre
+`no_network` : après un allumage, il lui faut couramment plus d'une minute pour
+le trouver.

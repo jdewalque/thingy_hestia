@@ -6,6 +6,7 @@ project(hestia)
 target_sources(app PRIVATE
   src/main.c
   src/alert.c
+  src/alert_json.c
   src/battery.c
   src/config.c
   src/config_json.c

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "alert_json.h"
 #include "config.h"
 #include "text.h"
 
@@ -135,8 +136,44 @@ static void test_sms(void)
 	assert(strstr(sms, "q=50.84673,4.35247") != NULL);
 }
 
+static void check_cloud(const char *what, cJSON *msg, const char *expected)
+{
+	char *text = cJSON_PrintUnformatted(msg);
+
+	check_str(what, text, expected);
+	cJSON_free(text);
+	cJSON_Delete(msg);
+}
+
+static void test_cloud_message(void)
+{
+	struct hestia_config cfg = {.name = "Marie", .message = "Marie a besoin d'aide."};
+	struct text_position brussels = {50.846734, 4.352468, 20.6f};
+
+	check_cloud("alerte réelle",
+		    alert_json_build(ALERT_KIND_REAL, &cfg, &brussels, 82, 1700000000000),
+		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\",\"ts\":1700000000000,"
+		    "\"data\":{\"type\":\"real\",\"name\":\"Marie\","
+		    "\"message\":\"Marie a besoin d'aide.\",\"battery\":82,"
+		    "\"position\":{\"lat\":50.84673,\"lon\":4.35247,\"accuracy\":21}}}");
+
+	/* Sans position, sans batterie et sans heure : les champs sont absents. */
+	check_cloud("test sans position", alert_json_build(ALERT_KIND_TEST, &cfg, NULL, -1, 0),
+		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\","
+		    "\"data\":{\"type\":\"test\",\"name\":\"Marie\","
+		    "\"message\":\"Marie a besoin d'aide.\"}}");
+
+	check_cloud("complément GPS",
+		    alert_json_build(ALERT_KIND_POSITION_UPDATE, &cfg, &brussels, 5, 0),
+		    "{\"appId\":\"HESTIA_ALERT\",\"messageType\":\"DATA\","
+		    "\"data\":{\"type\":\"position_update\",\"name\":\"Marie\","
+		    "\"message\":\"Marie a besoin d'aide.\",\"battery\":5,"
+		    "\"position\":{\"lat\":50.84673,\"lon\":4.35247,\"accuracy\":21}}}");
+}
+
 int main(void)
 {
+	test_cloud_message();
 	test_config_roundtrip();
 	test_config_rejects();
 	test_utf8_truncation();

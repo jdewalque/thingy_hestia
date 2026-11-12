@@ -8,7 +8,7 @@ enum JewelError {
   timeout,
   noNetwork,
   noContact,
-  smsFailed,
+  sendFailed,
   busy,
   rejected,
 }

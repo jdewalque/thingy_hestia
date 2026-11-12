@@ -55,7 +55,7 @@ Map<String, dynamic> checkResponse(Map<String, dynamic> response) {
   throw JewelException(switch (code) {
     'no_network' => JewelError.noNetwork,
     'no_contact' => JewelError.noContact,
-    'sms_failed' => JewelError.smsFailed,
+    'send_failed' => JewelError.sendFailed,
     'busy' => JewelError.busy,
     _ => JewelError.rejected,
   }, code);

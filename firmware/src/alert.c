@@ -3,10 +3,17 @@
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 
+#include <cJSON.h>
+#include <cJSON_os.h>
+#include <date_time.h>
 #include <modem/location.h>
 #include <modem/sms.h>
+#include <net/nrf_cloud_coap.h>
+#include <nrf_modem_at.h>
 
 #include "alert.h"
+#include "alert_json.h"
+#include "battery.h"
 #include "config.h"
 #include "link.h"
 #include "net.h"
@@ -15,8 +22,10 @@
 
 LOG_MODULE_REGISTER(alert, LOG_LEVEL_INF);
 
-/* Attente maximale du réseau mobile avant d'abandonner une alerte. */
-#define NETWORK_WAIT K_SECONDS(60)
+/* Attente maximale du réseau mobile avant d'abandonner une alerte. Après un
+ * allumage, le bijou met couramment plus d'une minute à trouver le réseau.
+ */
+#define NETWORK_WAIT K_SECONDS(120)
 /* Localisation rapide (Wi-Fi puis antennes) : elle ne doit pas retarder le SMS. */
 #define FAST_METHOD_TIMEOUT_MS (15 * MSEC_PER_SEC)
 #define FAST_TOTAL_TIMEOUT_MS  (30 * MSEC_PER_SEC)
@@ -127,8 +136,17 @@ static bool locate_gnss(void)
 	return locate(&config, GNSS_TIMEOUT_MS + 15 * MSEC_PER_SEC);
 }
 
-/* Envoie le texte de sms_utf8 à tous les contacts. Retourne le nombre de SMS partis. */
-static int send_to_all(void)
+/* Code « délai réseau dépassé » du modem (+CMS ERROR: 332). */
+#define CMS_NETWORK_TIMEOUT 332
+
+/*
+ * Envoie le texte de sms_utf8 à tous les contacts, directement par le modem.
+ * Retourne le nombre de SMS partis.
+ *
+ * Tous les réseaux n'acheminent pas les SMS (en NB-IoT notamment) : c'est
+ * pourquoi l'alerte part aussi vers nRF Cloud, voir send_to_cloud().
+ */
+static int send_sms_to_all(void)
 {
 	int sent = 0;
 
@@ -137,20 +155,78 @@ static int send_to_all(void)
 	for (int i = 0; i < cfg.contact_count; i++) {
 		int err = sms_send_text(cfg.contacts[i].phone, sms_latin9);
 
-		if (err) {
-			LOG_ERR("SMS au contact %d : échec (%d)", i + 1, err);
-		} else {
+		if (err == 0) {
 			LOG_INF("SMS au contact %d : envoyé", i + 1);
 			sent++;
+			continue;
+		}
+		LOG_ERR("SMS au contact %d : échec (%d)", i + 1, err);
+
+		/* Chaque essai sans réponse du réseau dure une trentaine de
+		 * secondes et les suivants échoueraient de la même façon.
+		 */
+		if (err > 0 && nrf_modem_at_err_type(err) == NRF_MODEM_AT_CMS_ERROR &&
+		    nrf_modem_at_err(err) == CMS_NETWORK_TIMEOUT) {
+			LOG_WRN("Le réseau n'achemine pas les SMS : abandon des suivants");
+			break;
 		}
 	}
 	return sent;
 }
 
-/* Retourne NULL si l'alerte est partie, sinon le code d'erreur du protocole. */
-static const char *run_alert(bool test)
+/* Envoie l'alerte à nRF Cloud. Retourne 0 si nRF Cloud l'a bien reçue. */
+static int send_to_cloud(enum alert_kind kind, const struct text_position *position)
 {
-	bool located;
+	int64_t now_ms = 0;
+	cJSON *msg;
+	char *text;
+	int err;
+
+	err = net_cloud_ensure();
+	if (err) {
+		return err;
+	}
+
+	(void)date_time_now(&now_ms);
+	msg = alert_json_build(kind, &cfg, position, battery_percent(), now_ms);
+	text = msg ? cJSON_PrintUnformatted(msg) : NULL;
+	cJSON_Delete(msg);
+	if (text == NULL) {
+		LOG_ERR("Mémoire insuffisante pour le message nRF Cloud");
+		return -ENOMEM;
+	}
+
+	/* Message « confirmable » : nRF Cloud en accuse réception. */
+	err = nrf_cloud_coap_json_message_send(text, false, true);
+	cJSON_FreeString(text);
+
+	if (err) {
+		LOG_ERR("Envoi à nRF Cloud : échec (%d)", err);
+		/* La session est peut-être rompue : elle sera rouverte la prochaine fois. */
+		net_cloud_invalidate();
+	} else {
+		LOG_INF("Alerte reçue par nRF Cloud");
+	}
+	return err;
+}
+
+/* Répond à l'application, une seule fois par alerte. */
+static void reply_once(struct alert_request *request, const char *error)
+{
+	if (request->reply_id != ALERT_NO_REPLY) {
+		link_reply(request->reply_id, error);
+		request->reply_id = ALERT_NO_REPLY;
+	}
+}
+
+/*
+ * Retourne NULL si l'alerte est partie par au moins une voie (nRF Cloud ou
+ * SMS), sinon le code d'erreur du protocole.
+ */
+static const char *run_alert(struct alert_request *request)
+{
+	const struct text_position *position;
+	bool cloud_ok;
 	int sent;
 
 	config_get(&cfg);
@@ -163,25 +239,37 @@ static const char *run_alert(bool test)
 		return "no_network";
 	}
 
-	located = locate_fast();
-	text_alert_sms(sms_utf8, sizeof(sms_utf8), &cfg, located ? &last_position : NULL, test);
-	sent = send_to_all();
-	if (sent == 0) {
-		return "sms_failed";
-	}
+	position = locate_fast() ? &last_position : NULL;
 
-	/* Un essai s'arrête là : inutile de faire attendre l'utilisateur deux
-	 * minutes pour un GPS qui ne capte presque jamais en intérieur.
+	/* nRF Cloud d'abord : c'est rapide. Dès qu'il a reçu l'alerte, elle est
+	 * considérée comme partie, sans attendre les SMS, qui peuvent mettre
+	 * longtemps à échouer.
 	 */
-	if (test) {
-		return sent == cfg.contact_count ? NULL : "sms_failed";
+	cloud_ok = send_to_cloud(request->test ? ALERT_KIND_TEST : ALERT_KIND_REAL, position) == 0;
+	if (cloud_ok) {
+		reply_once(request, NULL);
+		ui_set(UI_SUCCESS);
 	}
 
-	if (!located || last_position.accuracy > PRECISE_ENOUGH_M) {
+	text_alert_sms(sms_utf8, sizeof(sms_utf8), &cfg, position, request->test);
+	sent = send_sms_to_all();
+	if (!cloud_ok && sent == 0) {
+		return "send_failed";
+	}
+
+	/* Un essai s'arrête là : inutile de solliciter le GPS, qui ne capte
+	 * presque jamais en intérieur.
+	 */
+	if (request->test) {
+		return NULL;
+	}
+
+	if (position == NULL || position->accuracy > PRECISE_ENOUGH_M) {
 		LOG_INF("Position vague ou absente : essai par GPS");
 		if (locate_gnss()) {
+			(void)send_to_cloud(ALERT_KIND_POSITION_UPDATE, &last_position);
 			text_followup_sms(sms_utf8, sizeof(sms_utf8), &cfg, &last_position);
-			(void)send_to_all();
+			(void)send_sms_to_all();
 		}
 	}
 	return NULL;
@@ -198,12 +286,10 @@ static void alert_thread(void *p1, void *p2, void *p3)
 		LOG_INF("Alerte %s", request.test ? "de test" : "RÉELLE");
 		ui_set(UI_ALERTING);
 
-		error = run_alert(request.test);
+		error = run_alert(&request);
 
 		ui_set(error == NULL ? UI_SUCCESS : UI_FAILURE);
-		if (request.reply_id != ALERT_NO_REPLY) {
-			link_reply(request.reply_id, error);
-		}
+		reply_once(&request, error);
 		atomic_clear(&busy);
 	}
 }

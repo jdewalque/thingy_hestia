@@ -1,10 +1,11 @@
 # Firmware du bijou (Thingy:91 X)
 
-Firmware du nRF9151 du Thingy:91 X, pour le nRF Connect SDK **v3.4.1**.
+Firmware du nRF9151 du Thingy:91 X, pour le nRF Connect SDK **v3.4.x** (compilé
+avec les versions 3.4.1 et 3.4.2).
 
-Un appui maintenu sur le bouton localise le bijou et envoie un SMS avec un lien
-vers la carte à chaque contact d'urgence. Les contacts, le nom et le message
-viennent de l'application mobile, par Bluetooth.
+Un appui maintenu sur le bouton localise le bijou, puis envoie l'alerte à
+nRF Cloud et, par SMS, à chaque contact d'urgence. Les contacts, le nom et le
+message viennent de l'application mobile, par Bluetooth.
 
 ## Ce que fait le bijou
 
@@ -14,10 +15,58 @@ viennent de l'application mobile, par Bluetooth.
    puis au rouge clignotant quand l'alerte part).
 2. Le bijou cherche sa position par Wi-Fi et antennes mobiles (30 secondes au
    plus). Il n'attend pas le GPS, pour ne pas retarder l'alerte.
-3. Il envoie le SMS à tous les contacts, avec la position et sa marge d'erreur,
-   ou « Position inconnue pour le moment ».
+3. Il envoie l'alerte par deux voies :
+   - **nRF Cloud** d'abord (voir « Message envoyé à nRF Cloud ») ;
+   - **SMS direct** à chaque contact ensuite, avec la position et sa marge
+     d'erreur, ou « Position inconnue pour le moment ».
+
+   L'alerte est réussie dès qu'une des deux voies fonctionne. Le voyant passe
+   au vert dès que nRF Cloud a reçu l'alerte, sans attendre les SMS.
 4. Si la position est absente ou vague (plus de 100 m), il essaie ensuite le
-   GPS pendant 2 minutes et envoie un second SMS s'il obtient mieux.
+   GPS pendant 2 minutes et, s'il obtient mieux, renvoie la position par les
+   deux voies.
+
+Si le réseau n'achemine pas les SMS (le modem répond `+CMS ERROR: 332` après
+une trentaine de secondes), le bijou n'essaie pas les contacts suivants. C'est
+le cas observé en NB-IoT chez Proximus.
+
+### Message envoyé à nRF Cloud
+
+Un message d'appareil au format JSON, avec l'identifiant `HESTIA_ALERT` :
+
+```json
+{
+  "appId": "HESTIA_ALERT",
+  "messageType": "DATA",
+  "ts": 1700000000000,
+  "data": {
+    "type": "real",
+    "name": "Marie Dupont",
+    "message": "Marie Dupont a appuyé sur son bouton d'urgence et a besoin d'aide.",
+    "battery": 82,
+    "position": {"lat": 50.84673, "lon": 4.35247, "accuracy": 21}
+  }
+}
+```
+
+- `type` : `real` (bouton), `test` (essai depuis l'application) ou
+  `position_update` (position GPS qui complète une alerte réelle).
+- `position` est absent si le bijou n'a pas pu se localiser ; `accuracy` est la
+  marge d'erreur en mètres.
+- `battery` (en %) et `ts` (millisecondes depuis 1970) sont absents s'ils sont
+  inconnus.
+
+Les contacts ne sont pas envoyés à nRF Cloud pour l'instant.
+
+Pour relire les messages reçus, l'API de nRF Cloud est la voie la plus sûre
+(c'est aussi celle qu'utilisera le futur serveur d'envoi de SMS) :
+
+```bash
+curl -H "Authorization: Bearer $NRF_CLOUD_API_KEY" "https://api.nrfcloud.com/v1/messages?deviceId=$DEVICE_ID&appId=HESTIA_ALERT"
+```
+
+La clé d'API se trouve dans le compte nRF Cloud (« User Account »), et
+l'identifiant de l'appareil sur sa page.
 
 ### Voyant
 
@@ -33,10 +82,15 @@ viennent de l'application mobile, par Bluetooth.
 ### Localisation
 
 Le Wi-Fi ne donne qu'une liste de bornes visibles ; c'est nRF Cloud qui la
-convertit en coordonnées et les renvoie au bijou. Le Thingy doit donc être
-enregistré sur votre compte nRF Cloud (c'est déjà le cas s'il y apparaissait
-avec le firmware d'origine : les identifiants restent dans le modem). Le bijou
-ne se connecte jamais à un réseau Wi-Fi, il ne fait que les écouter.
+convertit en coordonnées et les renvoie au bijou. Le bijou ne se connecte
+jamais à un réseau Wi-Fi, il ne fait que les écouter.
+
+Le Thingy doit être rattaché à votre compte nRF Cloud. Sinon, la connexion
+échoue avec `nrf_cloud_coap_connect` → -111 dans les journaux. Pour le
+rattacher : remettre le firmware d'origine avec l'application Quick Start de
+nRF Connect for Desktop, y lire le jeton d'attestation, l'utiliser pour ajouter
+l'appareil au compte, puis reflasher Hestia. Les identifiants restent dans le
+modem.
 
 ## Mise en route
 
@@ -51,14 +105,21 @@ firmware d'origine. Il est désactivé à la sortie d'usine.
 
 ### 2. Compiler
 
-Depuis un terminal du nRF Connect SDK v3.4.1 (ou avec l'extension nRF Connect
-de VS Code, en choisissant la carte `thingy91x/nrf9151/ns`) :
+Depuis un terminal du nRF Connect SDK (ou avec l'extension nRF Connect de
+VS Code) :
 
 ```bash
 west build -p -b thingy91x/nrf9151/ns firmware
 ```
 
+La carte doit être `thingy91x/nrf9151/ns`. VS Code propose parfois
+`nrf9151dk/nrf9151/ns` : la compilation échoue alors sur `npm1300_charger`.
+
 ### 3. Flasher par USB
+
+Avec l'application Programmer de nRF Connect for Desktop : allumer le Thingy en
+maintenant son bouton (mode MCUboot), puis écrire `build/dfu_application.zip`.
+Ou en ligne de commande :
 
 ```bash
 west thingy91x-dfu
@@ -91,7 +152,7 @@ La logique indépendante du matériel (lecture des réglages, rédaction des SMS
 se teste sur PC :
 
 ```bash
-firmware/tests/run.sh ~/ncs/v3.4.1
+firmware/tests/run.sh ~/ncs/v3.4.2
 ```
 
 ## Organisation du code
@@ -100,7 +161,8 @@ firmware/tests/run.sh ~/ncs/v3.4.1
 |---|---|
 | `src/main.c` | Démarrage. |
 | `src/ui.c` | Bouton et voyant. |
-| `src/alert.c` | Déroulement d'une alerte : localisation puis SMS. |
+| `src/alert.c` | Déroulement d'une alerte : localisation, nRF Cloud, SMS. |
+| `src/alert_json.c` | Message d'alerte envoyé à nRF Cloud. |
 | `src/net.c` | Réseau mobile et session nRF Cloud. |
 | `src/link.c` | Dialogue avec l'application (lignes JSON sur UART0). |
 | `src/config.c`, `src/config_json.c` | Réglages : stockage en flash et JSON. |
@@ -115,8 +177,10 @@ firmware/tests/run.sh ~/ncs/v3.4.1
   charge ou quand le modem émet.
 - **Consommation non optimisée** : la liaison série avec le nRF5340 reste
   active en permanence.
-- **SMS envoyés par le modem** : il faut une carte SIM qui autorise les SMS sur
-  le réseau LTE-M. L'envoi est isolé dans `send_to_all()` (`src/alert.c`) pour
-  pouvoir le remplacer par un appel à un serveur.
+- **Personne n'est encore prévenu par nRF Cloud seul** : l'alerte y arrive,
+  mais il manque le serveur qui la transformera en SMS.
+- **SMS directs** : ils demandent une carte SIM et un réseau qui acheminent les
+  SMS. Avec la SIM Proximus essayée, le bijou n'est accepté qu'en NB-IoT, où
+  les SMS ne passent pas.
 - **Caractères des SMS** : alphabet latin uniquement ; les émojis et autres
   alphabets deviennent « ? ».
