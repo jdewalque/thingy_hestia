@@ -41,7 +41,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 FilledButton.icon(
                   onPressed: _pair,
                   icon: const Icon(Icons.search),
-                  label: Text(_error == null ? 'Rechercher mon bijou' : 'Réessayer'),
+                  label: Text(
+                    _error == null ? 'Rechercher mon bijou' : 'Réessayer',
+                  ),
                 ),
                 TextButton(
                   onPressed: () => _pair(demo: true),
@@ -52,7 +54,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
           const SizedBox(height: 32),
           const Icon(Icons.favorite, size: 88, color: brand),
           const SizedBox(height: 20),
-          Text('Bienvenue', style: text.headlineMedium, textAlign: TextAlign.center),
+          Text(
+            'Bienvenue',
+            style: text.headlineMedium,
+            textAlign: TextAlign.center,
+          ),
           const SizedBox(height: 12),
           Text(
             'Nous allons relier votre bijou à ce téléphone.',
@@ -81,7 +87,11 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.error_outline, size: 36, color: warnOrange),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 36,
+                      color: warnOrange,
+                    ),
                     const SizedBox(width: 16),
                     Expanded(child: Text(_error!, style: text.bodyLarge)),
                   ],
@@ -116,11 +126,17 @@ class _Step extends StatelessWidget {
           backgroundColor: brand,
           child: Text(
             number,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w700, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
           ),
         ),
         const SizedBox(width: 16),
-        Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyLarge)),
+        Expanded(
+          child: Text(text, style: Theme.of(context).textTheme.bodyLarge),
+        ),
       ],
     );
   }

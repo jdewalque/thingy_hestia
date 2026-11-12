@@ -44,7 +44,12 @@ class _TestScreenState extends State<TestScreen> {
         ? 'Approchez le bijou du téléphone pour lancer le test.'
         : null;
 
-    final (IconData icon, Color color, String title, String body) = switch (_phase) {
+    final (
+      IconData icon,
+      Color color,
+      String title,
+      String body,
+    ) = switch (_phase) {
       _Phase.ready => (
         Icons.notifications_active,
         brand,
@@ -64,7 +69,12 @@ class _TestScreenState extends State<TestScreen> {
         'Test réussi',
         'Le message de test est parti. Demandez à vos contacts s\'ils l\'ont bien reçu.',
       ),
-      _Phase.failure => (Icons.error, warnOrange, "Le test n'a pas fonctionné", _error),
+      _Phase.failure => (
+        Icons.error,
+        warnOrange,
+        "Le test n'a pas fonctionné",
+        _error,
+      ),
     };
 
     return PopScope(
@@ -115,7 +125,11 @@ class _TestScreenState extends State<TestScreen> {
             else
               Icon(icon, size: 96, color: color),
             const SizedBox(height: 24),
-            Text(title, style: text.headlineMedium, textAlign: TextAlign.center),
+            Text(
+              title,
+              style: text.headlineMedium,
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 16),
             Text(body, style: text.bodyLarge, textAlign: TextAlign.center),
           ],

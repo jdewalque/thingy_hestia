@@ -175,7 +175,7 @@ class AppState extends ChangeNotifier {
     }
     if (_pendingSync) await _sync();
     if (_pendingSync) throw const JewelException(JewelError.notConnected);
-    await link.request('test_alert', timeout: const Duration(seconds: 90));
+    await link.request('test_alert', timeout: const Duration(seconds: 120));
   }
 
   @override

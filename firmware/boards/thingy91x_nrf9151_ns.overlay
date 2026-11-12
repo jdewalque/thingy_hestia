@@ -1,0 +1,19 @@
+/* Active le nRF7002 (recherche des bornes Wi-Fi pour la localisation). */
+#include <thingy91x_wifi.dtsi>
+
+/*
+ * UART0 est relié au Bluetooth par le nRF5340 : il transporte uniquement le
+ * dialogue avec l'application. Les journaux passent donc sur UART1 (le second
+ * port série USB du Thingy:91 X, à 1 000 000 bauds).
+ */
+/ {
+	chosen {
+		zephyr,console = &uart1;
+		zephyr,shell-uart = &uart1;
+	};
+};
+
+/* Désactivé par défaut car réservé à la partie sécurisée (voir prj.conf). */
+&uart1 {
+	status = "okay";
+};

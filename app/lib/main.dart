@@ -35,6 +35,7 @@ class _Root extends StatelessWidget {
   const _Root();
 
   @override
-  Widget build(BuildContext context) =>
-      AppScope.of(context).isPaired ? const HomeScreen() : const WelcomeScreen();
+  Widget build(BuildContext context) => AppScope.of(context).isPaired
+      ? const HomeScreen()
+      : const WelcomeScreen();
 }

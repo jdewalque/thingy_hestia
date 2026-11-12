@@ -20,8 +20,7 @@ class HomeScreen extends StatelessWidget {
     final ok = await confirm(
       context,
       title: 'Changer de bijou ?',
-      message:
-          "Ce téléphone ne sera plus relié au bijou actuel. Vos contacts et votre message sont conservés.",
+      message: "Ce téléphone ne sera plus relié au bijou actuel. Vos contacts et votre message sont conservés.",
       yes: 'Oui, changer de bijou',
     );
     if (ok) await state.unpair();
@@ -54,8 +53,7 @@ class HomeScreen extends StatelessWidget {
             const _Notice(
               icon: Icons.sync,
               color: warnOrange,
-              text:
-                  "Vos derniers réglages seront envoyés au bijou dès qu'il sera près du téléphone.",
+              text: "Vos derniers réglages seront envoyés au bijou dès qu'il sera près du téléphone.",
             ),
           ],
           const SizedBox(height: 24),
@@ -73,7 +71,9 @@ class HomeScreen extends StatelessWidget {
           _MenuTile(
             icon: Icons.sms,
             title: 'Mon nom et mon message',
-            subtitle: config.wearerName.isEmpty ? 'À compléter' : config.wearerName,
+            subtitle: config.wearerName.isEmpty
+                ? 'À compléter'
+                : config.wearerName,
             onTap: () => _open(context, const MessageScreen()),
           ),
           const SizedBox(height: 16),
@@ -197,7 +197,10 @@ class _StatusLine extends StatelessWidget {
               if (warning != null)
                 Text(
                   warning!,
-                  style: style?.copyWith(color: warnOrange, fontWeight: FontWeight.w600),
+                  style: style?.copyWith(
+                    color: warnOrange,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
             ],
           ),
@@ -228,7 +231,9 @@ class _Notice extends StatelessWidget {
         children: [
           Icon(icon, size: 34, color: color),
           const SizedBox(width: 12),
-          Expanded(child: Text(text, style: Theme.of(context).textTheme.bodyMedium)),
+          Expanded(
+            child: Text(text, style: Theme.of(context).textTheme.bodyMedium),
+          ),
         ],
       ),
     );

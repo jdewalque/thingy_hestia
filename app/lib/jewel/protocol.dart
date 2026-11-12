@@ -7,13 +7,15 @@ import 'dart:convert';
 
 import 'jewel_link.dart';
 
-const String serviceUuid = '8e7a0001-5c1f-4b6e-9d2a-48e57149a0c1';
+/// Service « Nordic UART » : c'est celui qu'expose le nRF5340 du Thingy:91 X,
+/// qui relaie ensuite les messages au nRF9151 par liaison série.
+const String serviceUuid = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 
 /// Application → bijou (write).
-const String rxUuid = '8e7a0002-5c1f-4b6e-9d2a-48e57149a0c1';
+const String rxUuid = '6e400002-b5a3-f393-e0a9-e50e24dcca9e';
 
 /// Bijou → application (notify).
-const String txUuid = '8e7a0003-5c1f-4b6e-9d2a-48e57149a0c1';
+const String txUuid = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
 
 const int _newline = 0x0A;
 
@@ -50,8 +52,11 @@ class LineDecoder {
 Map<String, dynamic> checkResponse(Map<String, dynamic> response) {
   if (response['ok'] == true) return response;
   final code = response['error'] as String?;
-  throw JewelException(
-    code == 'no_network' ? JewelError.noNetwork : JewelError.rejected,
-    code,
-  );
+  throw JewelException(switch (code) {
+    'no_network' => JewelError.noNetwork,
+    'no_contact' => JewelError.noContact,
+    'sms_failed' => JewelError.smsFailed,
+    'busy' => JewelError.busy,
+    _ => JewelError.rejected,
+  }, code);
 }

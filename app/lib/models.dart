@@ -82,22 +82,23 @@ class JewelStatus {
   );
 }
 
-String defaultMessage(String name) =>
-    name.isEmpty ? '' : "$name a appuyé sur son bouton d'urgence et a besoin d'aide.";
+String defaultMessage(String name) => name.isEmpty
+    ? ''
+    : "$name a appuyé sur son bouton d'urgence et a besoin d'aide.";
 
 const _dialCodes = {'FR': '33', 'BE': '32', 'CH': '41', 'LU': '352'};
 
-/// Nettoie un numéro saisi ou venant du répertoire. Retourne null s'il est
-/// invalide. Les numéros nationaux (0…) sont convertis au format international
-/// quand le pays du téléphone est connu, car le serveur d'envoi de SMS en a
-/// besoin.
+/// Nettoie un numéro saisi ou venant du répertoire et le met au format
+/// international (+32…), le seul que le bijou sait utiliser pour un SMS.
+/// Les numéros nationaux (0…) sont convertis d'après le pays du téléphone.
+/// Retourne null si le numéro est invalide ou si son pays reste inconnu.
 String? normalizePhone(String raw, {String? countryCode}) {
   var s = raw.replaceAll(RegExp(r'[\s.\-()/]'), '');
   if (s.startsWith('00')) s = '+${s.substring(2)}';
   if (!RegExp(r'^\+?\d{8,15}$').hasMatch(s)) return null;
   final dial = _dialCodes[countryCode?.toUpperCase()];
   if (s.startsWith('0') && dial != null) s = '+$dial${s.substring(1)}';
-  return s;
+  return s.startsWith('+') ? s : null;
 }
 
 /// Affiche un numéro par groupes de chiffres, plus facile à relire :

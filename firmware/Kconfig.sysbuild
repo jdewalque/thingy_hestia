@@ -1,0 +1,9 @@
+# Le nRF7002 du Thingy:91 X ne sert qu'à lister les bornes Wi-Fi visibles.
+config WIFI_NRF70
+	default y
+
+choice WIFI_NRF70_OPER_MODES
+	default WIFI_NRF70_SCAN_ONLY
+endchoice
+
+source "share/sysbuild/Kconfig"

@@ -49,8 +49,11 @@ class ContactsScreen extends StatelessWidget {
     final country = _countryOf(context);
     final Contact? picked;
     try {
-      final permission = await FlutterContacts.permissions.request(PermissionType.read);
-      if (permission != PermissionStatus.granted && permission != PermissionStatus.limited) {
+      final permission = await FlutterContacts.permissions.request(
+        PermissionType.read,
+      );
+      if (permission != PermissionStatus.granted &&
+          permission != PermissionStatus.limited) {
         if (context.mounted) {
           showMessage(
             context,
@@ -64,7 +67,10 @@ class ContactsScreen extends StatelessWidget {
       );
     } on PlatformException {
       if (context.mounted) {
-        showMessage(context, "Impossible d'ouvrir le répertoire. Saisissez le numéro à la main.");
+        showMessage(
+          context,
+          "Impossible d'ouvrir le répertoire. Saisissez le numéro à la main.",
+        );
       }
       return;
     }
@@ -72,7 +78,8 @@ class ContactsScreen extends StatelessWidget {
 
     final name = picked.displayName ?? '';
     final phones = {
-      for (final p in picked.phones) ?normalizePhone(p.number, countryCode: country),
+      for (final p in picked.phones)
+        ?normalizePhone(p.number, countryCode: country),
     }.toList();
     if (phones.isEmpty) {
       showMessage(context, "$name n'a pas de numéro de téléphone valide.");
@@ -85,7 +92,11 @@ class ContactsScreen extends StatelessWidget {
     await _add(context, EmergencyContact(name: name, phone: phone));
   }
 
-  Future<String?> _choosePhone(BuildContext context, String name, List<String> phones) {
+  Future<String?> _choosePhone(
+    BuildContext context,
+    String name,
+    List<String> phones,
+  ) {
     return showModalBottomSheet<String>(
       context: context,
       builder: (context) => SafeArea(
@@ -116,7 +127,9 @@ class ContactsScreen extends StatelessWidget {
   Future<void> _typeNumber(BuildContext context) async {
     final contact = await Navigator.push(
       context,
-      MaterialPageRoute<EmergencyContact>(builder: (_) => const _ManualContactScreen()),
+      MaterialPageRoute<EmergencyContact>(
+        builder: (_) => const _ManualContactScreen(),
+      ),
     );
     if (contact != null && context.mounted) await _add(context, contact);
   }
@@ -165,13 +178,18 @@ class ContactsScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(contact.name, style: text.titleMedium),
-                          Text(formatPhone(contact.phone), style: text.bodyLarge),
+                          Text(
+                            formatPhone(contact.phone),
+                            style: text.bodyLarge,
+                          ),
                         ],
                       ),
                     ),
                     TextButton(
                       onPressed: () => _remove(context, contact),
-                      style: TextButton.styleFrom(foregroundColor: const Color(0xFFA3261E)),
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFFA3261E),
+                      ),
                       child: const Text('Retirer'),
                     ),
                   ],
@@ -239,9 +257,12 @@ class _ManualContactScreenState extends State<_ManualContactScreen> {
               style: fieldStyle,
               textCapitalization: TextCapitalization.words,
               textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Nom de la personne'),
-              validator: (v) =>
-                  (v ?? '').trim().isEmpty ? 'Indiquez le nom de la personne.' : null,
+              decoration: const InputDecoration(
+                labelText: 'Nom de la personne',
+              ),
+              validator: (v) => (v ?? '').trim().isEmpty
+                  ? 'Indiquez le nom de la personne.'
+                  : null,
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -251,8 +272,10 @@ class _ManualContactScreenState extends State<_ManualContactScreen> {
               decoration: const InputDecoration(
                 labelText: 'Numéro de téléphone portable',
               ),
-              validator: (v) => normalizePhone(v ?? '') == null
-                  ? 'Ce numéro ne semble pas correct. Vérifiez-le.'
+              validator: (v) =>
+                  normalizePhone(v ?? '', countryCode: _countryOf(context)) ==
+                      null
+                  ? "Ce numéro ne semble pas correct. Pour un numéro étranger, commencez par l'indicatif du pays, par exemple +33."
                   : null,
               onFieldSubmitted: (_) => _save(),
             ),

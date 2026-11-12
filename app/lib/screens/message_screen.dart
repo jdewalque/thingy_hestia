@@ -81,8 +81,11 @@ class _MessageScreenState extends State<MessageScreen> {
               controller: _name,
               style: fieldStyle,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Votre prénom et votre nom'),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Indiquez votre nom.' : null,
+              decoration: const InputDecoration(
+                labelText: 'Votre prénom et votre nom',
+              ),
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Indiquez votre nom.' : null,
             ),
             const SizedBox(height: 24),
             TextFormField(
@@ -97,7 +100,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 alignLabelWithHint: true,
                 counterStyle: TextStyle(fontSize: 16),
               ),
-              validator: (v) => (v ?? '').trim().isEmpty ? 'Écrivez un message.' : null,
+              validator: (v) =>
+                  (v ?? '').trim().isEmpty ? 'Écrivez un message.' : null,
             ),
             const SizedBox(height: 16),
             Text('Vos contacts recevront :', style: text.titleMedium),

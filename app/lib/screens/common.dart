@@ -8,18 +8,18 @@ String describeError(Object error) {
     return "Une erreur s'est produite. Veuillez réessayer.";
   }
   return switch (error.error) {
-    JewelError.bluetoothOff =>
-      "Le Bluetooth de ce téléphone est éteint. Activez-le dans les réglages du téléphone, puis réessayez.",
-    JewelError.permission =>
-      "L'application n'a pas l'autorisation d'utiliser le Bluetooth. Autorisez-la dans les réglages du téléphone, puis réessayez.",
-    JewelError.notFound =>
-      "Aucun bijou trouvé. Vérifiez qu'il est allumé et tout près du téléphone, puis réessayez.",
+    JewelError.bluetoothOff => "Le Bluetooth de ce téléphone est éteint. Activez-le dans les réglages du téléphone, puis réessayez.",
+    JewelError.permission => "L'application n'a pas l'autorisation d'utiliser le Bluetooth. Autorisez-la dans les réglages du téléphone, puis réessayez.",
+    JewelError.notFound => "Aucun bijou trouvé. Vérifiez qu'il est allumé et tout près du téléphone, puis réessayez.",
     JewelError.notConnected =>
       "Le bijou est hors de portée. Approchez-le du téléphone, puis réessayez.",
     JewelError.timeout =>
       "Le bijou n'a pas répondu. Approchez-le du téléphone, puis réessayez.",
-    JewelError.noNetwork =>
-      "Le bijou ne capte pas le réseau mobile. Déplacez-vous près d'une fenêtre ou à l'extérieur, puis réessayez.",
+    JewelError.noNetwork => "Le bijou ne capte pas le réseau mobile. Déplacez-vous près d'une fenêtre ou à l'extérieur, puis réessayez.",
+    JewelError.noContact => "Le bijou n'a encore aucun contact d'urgence. Ajoutez-en un, puis réessayez.",
+    JewelError.smsFailed => "Le bijou n'a pas réussi à envoyer le message. Vérifiez que sa carte SIM permet d'envoyer des SMS, puis réessayez.",
+    JewelError.busy =>
+      "Le bijou envoie déjà une alerte. Attendez une minute, puis réessayez.",
     JewelError.rejected =>
       "Le bijou n'a pas pu effectuer cette action. Veuillez réessayer.",
   };

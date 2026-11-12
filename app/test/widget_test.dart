@@ -20,7 +20,8 @@ class _FakeJewel extends DemoJewel {
   Map<String, dynamic>? storedConfig;
 
   @override
-  ValueListenable<bool> get connected => inRange.value ? super.connected : inRange;
+  ValueListenable<bool> get connected =>
+      inRange.value ? super.connected : inRange;
 
   @override
   Future<Map<String, dynamic>> request(
@@ -30,12 +31,17 @@ class _FakeJewel extends DemoJewel {
   }) async {
     if (!inRange.value) throw const JewelException(JewelError.notConnected);
     commands.add(cmd);
-    if (cmd == 'set_config') storedConfig = args!['config'] as Map<String, dynamic>;
+    if (cmd == 'set_config') {
+      storedConfig = args!['config'] as Map<String, dynamic>;
+    }
     return super.request(cmd, args: args, timeout: timeout);
   }
 }
 
-Future<AppState> _state(_FakeJewel jewel, [Map<String, Object> saved = const {}]) async {
+Future<AppState> _state(
+  _FakeJewel jewel, [
+  Map<String, Object> saved = const {},
+]) async {
   SharedPreferences.setMockInitialValues(saved);
   final prefs = await SharedPreferences.getInstance();
   return AppState(prefs, linkFactory: ({required demo}) => jewel);
@@ -44,11 +50,21 @@ Future<AppState> _state(_FakeJewel jewel, [Map<String, Object> saved = const {}]
 void main() {
   group('numéros de téléphone', () {
     test('nettoyage et format international', () {
-      expect(normalizePhone('0470 12 34 56', countryCode: 'BE'), '+32470123456');
-      expect(normalizePhone('06.12.34.56.78', countryCode: 'FR'), '+33612345678');
+      expect(
+        normalizePhone('0470 12 34 56', countryCode: 'BE'),
+        '+32470123456',
+      );
+      expect(
+        normalizePhone('06.12.34.56.78', countryCode: 'FR'),
+        '+33612345678',
+      );
       expect(normalizePhone('0032 470 12 34 56'), '+32470123456');
-      expect(normalizePhone('+33 6 12 34 56 78', countryCode: 'BE'), '+33612345678');
-      expect(normalizePhone('0470123456'), '0470123456');
+      expect(
+        normalizePhone('+33 6 12 34 56 78', countryCode: 'BE'),
+        '+33612345678',
+      );
+      // Pays inconnu : impossible de deviner l'indicatif.
+      expect(normalizePhone('0470123456'), isNull);
     });
 
     test('affichage par groupes', () {
@@ -72,7 +88,9 @@ void main() {
 
     test('les réponses fragmentées sont reconstituées', () {
       final decoder = LineDecoder();
-      final bytes = '{"id":1,"ok":true}\n{"id":2,"ok":false,"error":"no_network"}\n'.codeUnits;
+      final bytes =
+          '{"id":1,"ok":true}\n{"id":2,"ok":false,"error":"no_network"}\n'
+              .codeUnits;
       final messages = [
         ...decoder.add(bytes.sublist(0, 5)),
         ...decoder.add(bytes.sublist(5, 30)),
@@ -82,7 +100,13 @@ void main() {
       expect(checkResponse(messages[0])['id'], 1);
       expect(
         () => checkResponse(messages[1]),
-        throwsA(isA<JewelException>().having((e) => e.error, 'error', JewelError.noNetwork)),
+        throwsA(
+          isA<JewelException>().having(
+            (e) => e.error,
+            'error',
+            JewelError.noNetwork,
+          ),
+        ),
       );
     });
   });
@@ -94,31 +118,37 @@ void main() {
       contacts: [EmergencyContact(name: 'Paul', phone: '+32470123456')],
     );
 
-    test('les réglages modifiés hors de portée partent à la reconnexion', () async {
-      final jewel = _FakeJewel();
-      final state = await _state(jewel);
-      await state.pair(demo: true);
-      await Future<void>.delayed(_delay * 5);
+    test(
+      'les réglages modifiés hors de portée partent à la reconnexion',
+      () async {
+        final jewel = _FakeJewel();
+        final state = await _state(jewel);
+        await state.pair(demo: true);
+        await Future<void>.delayed(_delay * 5);
 
-      jewel.inRange.value = false;
-      await state.updateConfig(config);
-      expect(state.pendingSync, isTrue);
-      expect(jewel.storedConfig, isNull);
-      await expectLater(state.sendTestAlert(), throwsA(isA<JewelException>()));
+        jewel.inRange.value = false;
+        await state.updateConfig(config);
+        expect(state.pendingSync, isTrue);
+        expect(jewel.storedConfig, isNull);
+        await expectLater(
+          state.sendTestAlert(),
+          throwsA(isA<JewelException>()),
+        );
 
-      jewel.inRange.value = true;
-      await state.updateConfig(config.copyWith(message: 'Venez vite'));
-      await Future<void>.delayed(_delay * 5);
-      expect(state.pendingSync, isFalse);
-      expect(jewel.storedConfig!['message'], 'Venez vite');
-      expect(jewel.storedConfig!['contacts'], [
-        {'name': 'Paul', 'phone': '+32470123456'},
-      ]);
+        jewel.inRange.value = true;
+        await state.updateConfig(config.copyWith(message: 'Venez vite'));
+        await Future<void>.delayed(_delay * 5);
+        expect(state.pendingSync, isFalse);
+        expect(jewel.storedConfig!['message'], 'Venez vite');
+        expect(jewel.storedConfig!['contacts'], [
+          {'name': 'Paul', 'phone': '+32470123456'},
+        ]);
 
-      await state.sendTestAlert();
-      expect(jewel.commands.last, 'test_alert');
-      state.dispose();
-    });
+        await state.sendTestAlert();
+        expect(jewel.commands.last, 'test_alert');
+        state.dispose();
+      },
+    );
 
     test('un envoi en attente est repris au redémarrage', () async {
       final jewel = _FakeJewel();
@@ -161,7 +191,10 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Indiquez le nom de la personne.'), findsOneWidget);
     await tester.enterText(find.byType(TextFormField).at(0), 'Paul Martin');
-    await tester.enterText(find.byType(TextFormField).at(1), '+32 470 12 34 56');
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      '+32 470 12 34 56',
+    );
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
     expect(find.text('Paul Martin'), findsOneWidget);
@@ -175,7 +208,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField).at(0), 'Marie Dupont');
     await tester.pump();
-    expect(find.textContaining("Marie Dupont a appuyé sur son bouton d'urgence"), findsWidgets);
+    expect(
+      find.textContaining("Marie Dupont a appuyé sur son bouton d'urgence"),
+      findsWidgets,
+    );
     await tester.tap(find.text('Enregistrer'));
     await tester.pumpAndSettle();
     expect(find.text('Vos réglages sont enregistrés.'), findsOneWidget);

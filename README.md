@@ -4,9 +4,8 @@ Bijou connecté avec bouton d'urgence : une pression envoie la position du
 porteur par SMS à ses contacts. Prototype sur Thingy:91 X.
 
 - `app/` — application mobile (Flutter, Android et iPhone) pour régler le bijou.
-- `docs/protocole-ble.md` — protocole Bluetooth entre l'application et le bijou.
-
-Le firmware du bijou n'est pas encore dans ce dépôt.
+- `firmware/` — firmware du bijou pour le Thingy:91 X (voir `firmware/README.md`).
+- `docs/protocole-ble.md` — dialogue entre l'application et le bijou.
 
 ## Application
 

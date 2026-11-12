@@ -7,6 +7,9 @@ enum JewelError {
   notConnected,
   timeout,
   noNetwork,
+  noContact,
+  smsFailed,
+  busy,
   rejected,
 }
 
@@ -16,7 +19,8 @@ class JewelException implements Exception {
   final String? detail;
 
   @override
-  String toString() => 'JewelException(${error.name}${detail == null ? '' : ', $detail'})';
+  String toString() =>
+      'JewelException(${error.name}${detail == null ? '' : ', $detail'})';
 }
 
 /// Liaison avec un bijou. Deux implémentations : Bluetooth (réelle) et

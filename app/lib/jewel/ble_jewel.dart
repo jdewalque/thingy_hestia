@@ -68,8 +68,16 @@ class BleJewel implements JewelLink {
       throw const JewelException(JewelError.bluetoothOff, 'unsupported');
     }
     Future<BluetoothAdapterState> settled() => FlutterBluePlus.adapterState
-        .firstWhere((s) => s == BluetoothAdapterState.on || s == BluetoothAdapterState.off || s == BluetoothAdapterState.unauthorized)
-        .timeout(const Duration(seconds: 4), onTimeout: () => BluetoothAdapterState.unknown);
+        .firstWhere(
+          (s) =>
+              s == BluetoothAdapterState.on ||
+              s == BluetoothAdapterState.off ||
+              s == BluetoothAdapterState.unauthorized,
+        )
+        .timeout(
+          const Duration(seconds: 4),
+          onTimeout: () => BluetoothAdapterState.unknown,
+        );
 
     var state = await settled();
     if (state == BluetoothAdapterState.off && Platform.isAndroid) {
@@ -124,8 +132,12 @@ class BleJewel implements JewelLink {
       }
       final services = await device.discoverServices();
       final service = services.firstWhere((s) => s.uuid == Guid(serviceUuid));
-      final rx = service.characteristics.firstWhere((c) => c.uuid == Guid(rxUuid));
-      final tx = service.characteristics.firstWhere((c) => c.uuid == Guid(txUuid));
+      final rx = service.characteristics.firstWhere(
+        (c) => c.uuid == Guid(rxUuid),
+      );
+      final tx = service.characteristics.firstWhere(
+        (c) => c.uuid == Guid(txUuid),
+      );
 
       _decoder.reset();
       final sub = tx.onValueReceived.listen(_onData);
